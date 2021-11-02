@@ -1,0 +1,4 @@
+transformers
+torch
+kss
+git+https://github.com/ssut/py-hanspell.git
