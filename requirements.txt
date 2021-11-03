@@ -1,4 +1,4 @@
 transformers
 torch
 kss
-git+https://github.com/ssut/py-hanspell.git
+git+https://github.com/ssut/py-hanspell.git@master
