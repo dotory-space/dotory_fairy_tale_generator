@@ -10,7 +10,7 @@ setup(
     name="dotory-space/dotory_fairy_tale_generator",
     version="0.0.1",
     author="DOTORY",
-    author_email="ajtwlswjddnv1102@gmail.com",
+    author_email="developer@dotoryspace.com",
     description="dotory fairy tale generator",
     long_description=long_description,
     long_description_content_type="text/markdown",
