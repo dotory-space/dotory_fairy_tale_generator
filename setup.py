@@ -20,6 +20,6 @@ setup(
         'transformers',
         'torch',
         'nltk',
-        'git+https://github.com/ssut/py-hanspell.git',
+        'git://github.com/ssut/py-hanspell.git',
     ],
 )
