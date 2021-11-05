@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="dotory-space/dotory_fairy_tale_generator",
+    name="dotory_fairy_tale_generator",
     version="0.0.1",
     author="DOTORY",
     author_email="developer@dotoryspace.com",
