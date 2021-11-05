@@ -1,4 +1,4 @@
 transformers
 torch
 nltk
-git+git://github.com/ssut/py-hanspell.git
+py-hanspell
