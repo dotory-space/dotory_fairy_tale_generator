@@ -1,4 +1,4 @@
 transformers==4.12.3
 torch==1.9
 nltk==3.6.5
-py-hanspell==1.1
+git+https://github.com/ssut/py-hanspell
