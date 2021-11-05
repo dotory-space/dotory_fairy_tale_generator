@@ -16,10 +16,5 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/dotory-space/dotory_fairy_tale_generator.git",
     packages=find_packages(),
-    install_requires=[
-        'transformers',
-        'torch',
-        'nltk',
-        '-e git://github.com/ssut/py-hanspell.git',
-    ],
+    install_requires=requirements,
 )
