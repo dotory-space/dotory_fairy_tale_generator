@@ -2,7 +2,7 @@ from .hanspell import spell_checker
 import torch
 import kss
 
-def generate_sentences(model, tokenizer, input_sentence, device):
+def generate_sentences(model, tokenizer, input_sentence):
     encoded = torch.tensor([tokenizer.bos_token_id] + tokenizer.encode(input_sentence) + [tokenizer.eos_token_id]).unsqueeze(0)
     generated = model.generate(encoded, do_sample=True, num_return_sequences=3, max_length=60, min_length=1, temperature=0.6,
                                 bos_token_id=tokenizer.bos_token_id, eos_token_id=tokenizer.eos_token_id, pad_token_id=tokenizer.pad_token_id)  # length_penalty=10,  min_length=len(encoded[0])+3, # .to(device)
