@@ -1,4 +1,4 @@
-from hanspell import spell_checker
+from .hanspell import spell_checker
 import torch
 import kss
 
