@@ -5,7 +5,7 @@ from nltk.tokenize import sent_tokenize
 import requests
 from .hanspell import spell_checker
 
-class Generator():
+class FairyTaleGenerator:
     def __init__(self, checkpoint_path, tokenizer_dir_path, config_file_path):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         checkpoint = torch.load(checkpoint_path, map_location = self.device)
