@@ -1,15 +1,49 @@
-from .hanspell import spell_checker
 import torch
-import kss
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config
+import nltk
+from nltk.tokenize import sent_tokenize
+import requests
+from .hanspell import spell_checker
 
-def generate_sentences(model, tokenizer, input_sentence):
-    encoded = torch.tensor([tokenizer.bos_token_id] + tokenizer.encode(input_sentence) + [tokenizer.eos_token_id]).unsqueeze(0)
-    generated = model.generate(encoded, do_sample=True, num_return_sequences=3, max_length=60, min_length=1, temperature=0.6,
-                                bos_token_id=tokenizer.bos_token_id, eos_token_id=tokenizer.eos_token_id, pad_token_id=tokenizer.pad_token_id)  # length_penalty=10,  min_length=len(encoded[0])+3, # .to(device)
-    output_sentence = [tokenizer.decode(generated[i], skip_special_tokens=True) for i in range(3)]  # decode
-    output_sentence = [output_sentence[i].replace(input_sentence, '').lstrip(' ') for i in range(3)]  # input 중복 문장 제거
-    output_sentence = [kss.split_sentences(output_sentence[i])[0] for i in range(3)]  # 첫 번째 문장 분리
-    output_sentence = [spell_checker.check(output_sentence[i]).checked for i in range(3)]  # 맞춤법 검사
-    output_sentence = [output_sentence[i] + '.' if output_sentence[i] and output_sentence[i][-1] in ['다','요'] else output_sentence[i] for i in range(3)]  # 마침표 추가
-    return output_sentence
-    
+class Generator():
+    def __init__(self, checkpoint_path, tokenizer_dir_path, config_file_path):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        checkpoint = torch.load(checkpoint_path, map_location = self.device)
+
+        self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_dir_path)
+
+        self.model = GPT2LMHeadModel(GPT2Config.from_json_file(config_file_path))
+        self.model.load_state_dict(checkpoint['model'])
+        self.model.to(self.device)
+
+        nltk.download('punkt')
+
+    def translate_kakao(self, text, source, target):
+        url = "https://translate.kakao.com/translator/translate.json"
+
+        headers = {
+            "Referer": "https://translate.kakao.com/",
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        data = {
+            "queryLanguage": source,
+            "resultLanguage": target,
+            "q": text
+        }
+
+        resp = requests.post(url, headers=headers, data=data)
+        data = resp.json()
+        output = data['result']['output'][0][0]
+        return output
+
+    def generate(self, input_sentence):
+        encoded = torch.tensor(self.tokenizer.encode(input_sentence)).unsqueeze(0).to(self.device)
+        generated = self.model.generate(encoded, do_sample=True, top_p=0.9, num_return_sequences=3, max_length=200, min_length=1, temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)  # length_penalty=10, 
+        decoded = [self.tokenizer.decode(generated[i]) for i in range(3)]  # decode
+        output_eng = [decoded[i].replace(input_sentence, '').lstrip(' ') for i in range(3)]  # input 중복 문장 제거
+        output_eng = [sent_tokenize(output_eng[i])[0] for i in range(3)]  # 첫 번째 문장 분리
+        output_kor = [self.translate_kakao(output_eng[i], 'en', 'ku') for i in range(3)]  # papgo : ko, kakao : ku (ku : 높임말 문체 in kakao)
+        output_kor = [spell_checker.check(output_kor[i]).checked for i in range(3)]  # 맞춤법 검사
+
+        return output_kor
