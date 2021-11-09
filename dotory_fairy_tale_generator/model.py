@@ -2,15 +2,11 @@ import torch
 from transformers import GPT2LMHeadModel, GPT2Config
 
 def get_model(checkpoint_path, config_file_path):
-    print('[fairy-tale-generator] [get-model] [1]')
+    device = torch.device('cpu')
     config = GPT2Config.from_json_file(config_file_path)
-    print('[fairy-tale-generator] [get-model] [2]')
-    model = GPT2LMHeadModel.from_pretrained('skt/kogpt2-base-v2')
-    print('[fairy-tale-generator] [get-model] [3]')
-    checkpoint = torch.load(checkpoint_path)
-    print('[fairy-tale-generator] [get-model] [4]')
+    model = GPT2LMHeadModel(config=config)
+    checkpoint = torch.load(checkpoint_path, map_location=device)
     model.load_state_dict(checkpoint)
-    print('[fairy-tale-generator] [get-model] [5]')
 
     return model
 
