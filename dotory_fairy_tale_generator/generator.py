@@ -7,13 +7,17 @@ from .hanspell import spell_checker
 
 class FairyTaleGenerator:
     def __init__(self, checkpoint_path, tokenizer_dir_path, config_file_path):
+        print('[FTG] initialize')
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print('[FTG] device: ', self.device)
         checkpoint = torch.load(checkpoint_path, map_location = self.device)
-
+        print('[FTG] checkpoint: ', checkpoint)
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_dir_path)
-
+        print('[FTG] tokenizer: ', self.tokenizer)
         self.model = GPT2LMHeadModel(GPT2Config.from_json_file(config_file_path))
+        print('[FTG] model: ', self.model)
         self.model.load_state_dict(checkpoint['model'])
+        print('[FTG] model loaded')
         self.model.to(self.device)
 
         nltk.download('punkt')
