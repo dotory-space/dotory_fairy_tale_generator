@@ -11,7 +11,7 @@ class FairyTaleGenerator:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('[FTG] device: ', self.device)
         checkpoint = torch.load(checkpoint_path, map_location = self.device)
-        print('[FTG] checkpoint: ', checkpoint)
+        print('[FTG] checkpoint loaded')
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_dir_path)
         print('[FTG] tokenizer: ', self.tokenizer)
         config = GPT2Config.from_json_file(config_file_path)
