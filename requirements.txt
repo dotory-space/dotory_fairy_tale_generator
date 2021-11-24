@@ -1,4 +1,4 @@
-transformers==4.12.3
-torch==1.9
-nltk==3.6.5
-requests==2.20.0
+transformers==4.12.5
+torch==1.10.0+cu111
+nltk==3.2.5
+requests==2.23.0

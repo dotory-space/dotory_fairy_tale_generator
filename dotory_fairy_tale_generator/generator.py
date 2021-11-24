@@ -16,12 +16,12 @@ class FairyTaleGenerator:
         print('[FTG] tokenizer: ', self.tokenizer)
         config = GPT2Config.from_json_file(config_file_path)
         print('[FTG] config: ', config)
-        self.model = GPT2LMHeadModel(config)
+        model = GPT2LMHeadModel(config)
         print('[FTG] model: ', self.model)
-        self.model.load_state_dict(checkpoint['model'])
+        model.load_state_dict(checkpoint['model'])
         print('[FTG] model loaded')
-        self.model.to(self.device)
-
+        model.to(self.device)
+        self.model = model
         nltk.download('punkt')
 
     def translate_kakao(self, text, source, target):
