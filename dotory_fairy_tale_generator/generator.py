@@ -44,6 +44,7 @@ class FairyTaleGenerator:
         return output
 
     def generate(self, input_sentence):
+        input_sentence = self.translate_kakao(input_sentence, 'kr', 'en')  # papago : ko, kakao : kr
         encoded = torch.tensor(self.tokenizer.encode(input_sentence)).unsqueeze(0).to(self.device)
         generated = self.model.generate(encoded, do_sample=True, top_p=0.9, num_return_sequences=3, max_length=200, min_length=1, temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)  # length_penalty=10, 
         decoded = [self.tokenizer.decode(generated[i]) for i in range(3)]  # decode
