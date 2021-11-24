@@ -17,7 +17,7 @@ class FairyTaleGenerator:
         config = GPT2Config.from_json_file(config_file_path)
         print('[FTG] config: ', config)
         model = GPT2LMHeadModel(config)
-        print('[FTG] model: ', self.model)
+        print('[FTG] model: ', model)
         model.load_state_dict(checkpoint['model'])
         print('[FTG] model loaded')
         model.to(self.device)
