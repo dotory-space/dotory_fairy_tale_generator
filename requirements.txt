@@ -1,4 +1,4 @@
 transformers==4.12.5
 torch==1.10
-nltk==3.2.5
+nltk==3.6.4
 requests==2.23.0
