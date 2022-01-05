@@ -52,7 +52,7 @@ class FairyTaleGenerator:
 
         encoded = torch.cat([encoded, torch.tensor(self.tokenizer.encode(input_sentence)).to(self.device)])
         print('Length of encoded:', len(encoded))
-        generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, num_return_sequences=3, max_length=len(encoded)+100, min_length=len(encoded), temperature=0.6, pad_token_id=tokenizer.eos_token_id).to(device)  # length_penalty=10,
+        generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, num_return_sequences=3, max_length=len(encoded)+100, min_length=len(encoded), temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)  # length_penalty=10,
         generated = [generated[i][len(encoded):] for i in range(3)]  # input 중복 제거
         decoded = [self.tokenizer.decode(generated[i]) for i in range(3)]  # decode
         output_eng = [sent_tokenize(decoded[i])[0] if decoded[i] else decoded[i] for i in range(3)]  # 첫 번째 문장 분리, kakao 번역이 문장 단위로 잘라주기 때문에 translate_kakao에 decodede 그대로 들어감. 얘는 그저 output_eng를 위함
@@ -60,7 +60,7 @@ class FairyTaleGenerator:
         output_kor = [spell_checker.check(output_kor[i]).checked for i in range(3)]  # 맞춤법 검사
         for i in range(3):
             if sum([f in output_kor[i] for f in self.filtering]):  # filter it and new generate
-                generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, num_return_sequences=1, max_length=len(encoded)+100, min_length=len(encoded), temperature=0.6, pad_token_id=tokenizer.eos_token_id).to(device)
+                generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, num_return_sequences=1, max_length=len(encoded)+100, min_length=len(encoded), temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)
                 generated = generated[0][len(encoded):]
                 decoded = self.tokenizer.decode(generated)
                 try:output_eng[i] = sent_tokenize(decoded)[0]
