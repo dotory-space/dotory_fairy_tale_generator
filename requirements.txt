@@ -3,3 +3,4 @@ torch
 nltk
 requests
 pyjosa
+pandas
