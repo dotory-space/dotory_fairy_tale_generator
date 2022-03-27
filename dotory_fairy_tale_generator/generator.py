@@ -36,6 +36,8 @@ class FairyTaleGenerator:
         first_sentence = pd.Series(first_sentence)
         self.first_sentence_df = pd.concat([first_sentence.str[:4], first_sentence.str[5:]], axis=1, keys=['theme', 'first_sentence'])
         print('[FTG] first sentences loaded: ', )
+
+        self.theme_names = ['우주', '숲속', '바다', '마을', '왕국']
     
     def replace_name(self, sentence, character1, character2):
         if '> ' in sentence:
@@ -63,6 +65,8 @@ class FairyTaleGenerator:
         return sentence
 
     def generate_first_sentence(self, theme, character1_name, character2_name):
+        if theme not in self.theme_names:
+            theme = '기타'
         first_sentence_theme = self.first_sentence_df[self.first_sentence_df.theme == "<" + theme + ">"].first_sentence.values
         input_sentence = random.choice(first_sentence_theme)
         return self.replace_name(input_sentence, character1_name, character2_name)
