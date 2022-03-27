@@ -67,7 +67,7 @@ class FairyTaleGenerator:
         input_sentence = random.choice(first_sentence_theme)
         return self.replace_name(input_sentence, character1_name, character2_name)
 
-    def generate_sentence(self, input_sentence, character1_name, character2_name, encoded):
+    def generate_sentence(self, input_sentence, character1_name, character2_name, encoded = None):
         if encoded is None:
             encoded = torch.LongTensor().to(self.device)
         else:
