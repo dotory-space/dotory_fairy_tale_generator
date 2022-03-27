@@ -1,71 +1,92 @@
 import torch
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config
+from transformers import PreTrainedTokenizerFast, GPT2LMHeadModel
 import nltk
 from nltk.tokenize import sent_tokenize
-import requests
 from .hanspell import spell_checker
+import pandas as pd
+from pyjosa.josa import Josa
+import random
 
 class FairyTaleGenerator:
-    def __init__(self, checkpoint_path, tokenizer_dir_path, config_file_path, filtering_file_path):
+    def __init__(self, checkpoint_path, first_sentence_file_path, filtering_file_path):
         print('[FTG] initialize')
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print('[FTG] device: ', self.device)
-        checkpoint = torch.load(checkpoint_path, map_location = self.device)
-        print('[FTG] checkpoint loaded')
-        self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_dir_path)
+        self.tokenizer = PreTrainedTokenizerFast.from_pretrained('skt/kogpt2-base-v2', bos_token='</s>', eos_token='</s>', unk_token='<unk>', pad_token='<pad>', mask_token='<mask>')
+        self.tokenizer.add_special_tokens({
+            'additional_special_tokens': [
+                '<우주>', '<숲속>', '<바다>', '<마을>', '<왕국>', '<기타>', '<등장인물1>', '<등장인물2>'
+            ]
+        })
         print('[FTG] tokenizer: ', self.tokenizer)
-        config = GPT2Config.from_json_file(config_file_path)
-        print('[FTG] config: ', config)
-        self.model = GPT2LMHeadModel(config)
-        print('[FTG] model: ', self.model)
-        self.model.load_state_dict(checkpoint['model'])
-        print('[FTG] model loaded')
+        self.model = GPT2LMHeadModel.from_pretrained(checkpoint_path)
         self.model.to(self.device)
+        print('[FTG] model: ', self.model)
         nltk.download('punkt')
 
-        f = open(filtering_file_path, 'r')
-        self.filtering = f.read().split('\n')
-        f.close()
+        filtering_file = open(filtering_file_path, 'r')
+        self.filtering = filtering_file.read().split('\n')
+        filtering_file.close()
         print('[FTG] filtering loaded: ', self.filtering)
 
-    def translate_kakao(self, text, source, target):
-        url = "https://translate.kakao.com/translator/translate.json"
+        first_sentence_file = open(first_sentence_file_path, 'r')
+        first_sentence = first_sentence_file.read().split('\n')
+        first_sentence_file.close()
+        first_sentence.remove('')
+        first_sentence = pd.Series(first_sentence)
+        self.first_sentence_df = pd.concat([first_sentence.str[:4], first_sentence.str[5:]], axis=1, keys=['theme', 'first_sentence'])
+        print('[FTG] first sentences loaded: ', )
+    
+    def replace_name(sentence, character1, character2):
+        if '> ' in sentence:
+            sentence = sentence.replace('> ', '>')
 
-        headers = {
-            "Referer": "https://translate.kakao.com/",
-            "User-Agent": "Mozilla/5.0"
-        }
+        if '<등장인물1>' in sentence or '<등장인물 1>' in sentence:
+            sentence = sentence.replace('<등장인물1>', character1)
+            sentence = sentence.replace('<등장인물 1>', character1)
+            idx = sentence.index(character1)+len(character1)
+            if sentence[idx] in ['을', '를', '은', '는', '이', '가', '과', '와', '이나', '나', '으로', '로', '아', '야',
+                                                                    '이랑', '랑', '이며', '며', '이다', '다', '이가', '가']:
+                sentence = list(sentence)
+                sentence[idx] = Josa.get_josa(character1, sentence[idx])
+                sentence = "".join(sentence)
 
-        data = {
-            "queryLanguage": source,
-            "resultLanguage": target,
-            "q": text
-        }
+        if '<등장인물2>' in sentence or '<등장인물 2>' in sentence:
+            sentence = sentence.replace('<등장인물2>', character2)
+            sentence = sentence.replace('<등장인물 2>', character2)
+            idx = sentence.index(character2)+len(character2)
+            if sentence[idx] in ['을', '를', '은', '는', '이', '가', '과', '와', '이나', '나', '으로', '로', '아', '야',
+                                                                    '이랑', '랑', '이며', '며', '이다', '다', '이가', '가']:
+                sentence = list(sentence)
+                sentence[idx] = Josa.get_josa(character2, sentence[idx])
+                sentence = "".join(sentence)
+        return sentence
 
-        resp = requests.post(url, headers=headers, data=data)
-        data = resp.json()
-        output = data['result']['output'][0][0]
-        return output
+    def generate_first_sentence(self, theme, character1_name, character2_name):
+        first_sentence_theme = self.first_sentence_df[self.first_sentence_df.theme == theme].first_sentence.values
+        input_sentence = random.choice(first_sentence_theme)
+        return self.replace_name(input_sentence, character1_name, character2_name)
 
-    def generate(self, input_sentence):
-        input_sentence = self.translate_kakao(input_sentence, 'kr', 'en')  # papago : ko, kakao : kr
-        encoded = torch.LongTensor().to(self.device)
-
+    def generate_sentence(self, input_sentence, character1_name, character2_name):
         encoded = torch.cat([encoded, torch.tensor(self.tokenizer.encode(input_sentence)).to(self.device)])
-        generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, num_return_sequences=3, max_length=len(encoded)+100, min_length=len(encoded), temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)  # length_penalty=10,
+        generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, \
+                                num_return_sequences=3, max_length=len(encoded)+100, min_length=len(encoded), \
+                                temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)
         generated = [generated[i][len(encoded):] for i in range(3)]  # input 중복 제거
-        decoded = [self.tokenizer.decode(generated[i]) for i in range(3)]  # decode
-        output_eng = [sent_tokenize(decoded[i])[0] if decoded[i] else decoded[i] for i in range(3)]  # 첫 번째 문장 분리, kakao 번역이 문장 단위로 잘라주기 때문에 translate_kakao에 decodede 그대로 들어감. 얘는 그저 output_eng를 위함
-        output_kor = [self.translate_kakao(decoded[i], 'en', 'ku') for i in range(3)] # papgo : ko, kakao : ku (ku : 높임말 문체 in kakao)
-        output_kor = [spell_checker.check(output_kor[i]).checked for i in range(3)]  # 맞춤법 검사
+        decoded = [self.tokenizer.decode(generated[i], clean_up_tokenization_spaces=True) for i in range(3)]  # decode
+        output = [sent_tokenize(decoded[i])[0] if decoded[i] else decoded[i] for i in range(3)]  # 첫번째 문장 분리
+        output = [self.replace_name(output[i], character1_name, character2_name) for i in range(3)]  # 등장인물 스위칭
+        output = [spell_checker.check(output[i]).checked for i in range(3)]  # 맞춤법 검사
         for i in range(3):
-            if sum([f in output_kor[i] for f in self.filtering]):  # filter it and new generate
-                generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, num_return_sequences=1, max_length=len(encoded)+100, min_length=len(encoded), temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)
+            if sum([f in output[i] for f in self.filtering]):  # filter it and new generate
+                generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, \
+                                    num_return_sequences=1, max_length=len(encoded)+100, min_length=len(encoded), \
+                                    temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)
                 generated = generated[0][len(encoded):]
-                decoded = self.tokenizer.decode(generated)
-                try:output_eng[i] = sent_tokenize(decoded)[0]
-                except:output_eng[i] = decoded
-                output_kor[i] = self.translate_kakao(output_eng[i], 'en', 'ku')
-                output_kor[i] = spell_checker.check(output_kor[i]).checked
+                decoded = self.tokenizer.decode(generated, clean_up_tokenization_spaces=True)
+                try:output[i] = sent_tokenize(decoded)
+                except:output[i] = decoded
+                output[i] = self.replace_name(output[i], character1_name, character2_name)
+                output[i] = spell_checker.check(output[i]).checked
 
-        return output_kor
+        return output
