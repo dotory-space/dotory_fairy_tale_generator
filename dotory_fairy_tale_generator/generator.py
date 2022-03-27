@@ -37,7 +37,7 @@ class FairyTaleGenerator:
         self.first_sentence_df = pd.concat([first_sentence.str[:4], first_sentence.str[5:]], axis=1, keys=['theme', 'first_sentence'])
         print('[FTG] first sentences loaded: ', )
     
-    def replace_name(sentence, character1, character2):
+    def replace_name(self, sentence, character1, character2):
         if '> ' in sentence:
             sentence = sentence.replace('> ', '>')
 
