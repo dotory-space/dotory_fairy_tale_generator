@@ -63,15 +63,21 @@ class FairyTaleGenerator:
         return sentence
 
     def generate_first_sentence(self, theme, character1_name, character2_name):
-        first_sentence_theme = self.first_sentence_df[self.first_sentence_df.theme == theme].first_sentence.values
+        first_sentence_theme = self.first_sentence_df[self.first_sentence_df.theme == "<" + theme + ">"].first_sentence.values
         input_sentence = random.choice(first_sentence_theme)
         return self.replace_name(input_sentence, character1_name, character2_name)
 
-    def generate_sentence(self, input_sentence, character1_name, character2_name):
+    def generate_sentence(self, input_sentence, character1_name, character2_name, encoded):
+        if encoded is None:
+            encoded = torch.LongTensor().to(self.device)
+        else:
+            encoded = torch.LongTensor(encoded).to(self.device)
         encoded = torch.cat([encoded, torch.tensor(self.tokenizer.encode(input_sentence)).to(self.device)])
-        generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, \
-                                num_return_sequences=3, max_length=len(encoded)+100, min_length=len(encoded), \
-                                temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)
+        generated = self.model.generate(
+            encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9,
+            num_return_sequences=3, max_length=len(encoded)+100, min_length=len(encoded),
+            temperature=0.6, pad_token_id=self.tokenizer.eos_token_id
+        ).to(self.device)
         generated = [generated[i][len(encoded):] for i in range(3)]  # input 중복 제거
         decoded = [self.tokenizer.decode(generated[i], clean_up_tokenization_spaces=True) for i in range(3)]  # decode
         output = [sent_tokenize(decoded[i])[0] if decoded[i] else decoded[i] for i in range(3)]  # 첫번째 문장 분리
@@ -79,9 +85,11 @@ class FairyTaleGenerator:
         output = [spell_checker.check(output[i]).checked for i in range(3)]  # 맞춤법 검사
         for i in range(3):
             if sum([f in output[i] for f in self.filtering]):  # filter it and new generate
-                generated = self.model.generate(encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9, \
-                                    num_return_sequences=1, max_length=len(encoded)+100, min_length=len(encoded), \
-                                    temperature=0.6, pad_token_id=self.tokenizer.eos_token_id).to(self.device)
+                generated = self.model.generate(
+                    encoded.unsqueeze(0), do_sample=True, use_cache=True, top_p=0.9,
+                    num_return_sequences=1, max_length=len(encoded)+100, min_length=len(encoded),
+                    temperature=0.6, pad_token_id=self.tokenizer.eos_token_id
+                ).to(self.device)
                 generated = generated[0][len(encoded):]
                 decoded = self.tokenizer.decode(generated, clean_up_tokenization_spaces=True)
                 try:output[i] = sent_tokenize(decoded)
