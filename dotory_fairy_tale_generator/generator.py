@@ -97,4 +97,4 @@ class FairyTaleGenerator:
                 output[i] = self.replace_name(output[i], character1_name, character2_name)
                 output[i] = spell_checker.check(output[i]).checked
 
-        return output
+        return output, encoded
