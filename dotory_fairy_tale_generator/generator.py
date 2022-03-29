@@ -64,12 +64,12 @@ class FairyTaleGenerator:
                 sentence = "".join(sentence)
         return sentence
 
-    def generate_first_sentence(self, theme, character1_name, character2_name):
+    def generate_first_sentences(self, theme, character1_name, character2_name):
         if theme not in self.theme_names:
             theme = '기타'
         first_sentence_theme = self.first_sentence_df[self.first_sentence_df.theme == "<" + theme + ">"].first_sentence.values
-        input_sentence = random.choice(first_sentence_theme)
-        return self.replace_name(input_sentence, character1_name, character2_name)
+        input_sentences = random.choice(first_sentence_theme, 3)
+        return [self.replace_name(input_sentence, character1_name, character2_name) for input_sentence in input_sentences]
 
     def generate_sentence(self, input_sentence, character1_name, character2_name, encoded = None):
         if encoded is None:
